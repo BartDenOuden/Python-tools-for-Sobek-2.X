@@ -1,0 +1,24 @@
+[General]
+Title=PyTls
+AppType=1
+Version=1.0.0
+CATTemplateFile=Fixed\Cat.tpl
+ThematicMapOption=2
+CATIniFile=C:\Sobek213\Programs\Cat\cat.ini
+WQStandardsOption=0
+SaveTemplateonExit=True
+UserName=SOBEK
+
+[Functions]
+defaultini=C:\Sobek213\Programs\Cat\functions.ini
+
+[Netter]
+NtpFile=C:\Sobek213\Programs\cat\netter.ntp
+
+[CMTApps]
+NumberApps=1
+App1=\SOBEK213\PyTls.lit, PyTls
+
+[StandAloneApps]
+NumberApps=0
+

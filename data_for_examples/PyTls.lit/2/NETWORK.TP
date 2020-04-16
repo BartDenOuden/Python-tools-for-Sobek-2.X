@@ -1,0 +1,4 @@
+TP_1.0
+NODE id 'bnd_bov' nm '' px 140007.925221816 py 457059.941610471 node
+NODE id 'bnd_ben' nm '' px 140733.38406815 py 457086.922020481 node
+BRCH id '1' nm '' bn 'bnd_bov' en 'bnd_ben' al 725.96038476528 vc_opt 1 vc_equi -1 vc_len 25 brch
