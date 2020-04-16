@@ -2,12 +2,87 @@
 Bart den Ouden, october 2019
 bart@bartdenoudenwateradvies.nl"""
 
+import datetime
+
 import pandas as pd
 import matplotlib.ticker as ticker
 import matplotlib.dates as dates
 import matplotlib.pyplot as plt
 
+from settings import *
 import sobekdatafetcher
+
+class _Title:
+
+    _title = None
+
+    def __init__(self, axes):
+        self.axes = axes
+
+    def set_title(self, title):
+        self._title = title
+
+    def _apply_settings(self):
+        if self._title:
+            self.axes.set_title(self._title)
+
+class _Xaxis:
+
+    _title = None
+    _label = None
+    _lim_low = None
+    _lim_high = None
+    _major_grid_visible = DEFAULT_MAJOR_GRID_X_AXIS_VISIBLE
+    _minor_grid_visible = DEFAULT_MINOR_GRID_X_AXIS_VISIBLE
+
+    def __init__(self, axes):
+        self.axes = axes
+
+    def set_lower_limit(self, limit_datetime):
+        self._lim_low = limit_datetime
+
+    def set_upper_limit(self, limit_datetime):
+        self._lim_high = limit_datetime
+
+    def set_label(self, str_label):
+        self._label = str_label
+
+    def set_major_grid_visible(self, visible):
+        self._major_grid_visible = visible
+
+    def set_minor_grid_visible(self, visible):
+        self._minor_grid_visible = visible
+
+    def _set_visibility_grid(self):
+        if self._major_grid_visible == True:
+            self.axes.xaxis.grid(b=True, which="major", linewidth=LINEWIDTH_MAJOR_GRID)
+        else:
+            self.axes.xaxis.grid(b=False, which="major")
+        if self._minor_grid_visible == True:
+            self.axes.xaxis.grid(b=True, which="minor", linewidth=LINEWIDTH_MINOR_GRID)
+        else:
+            self.axes.xaxis.grid(b=False, which="minor")
+
+    def _set_angle_tick_labels(self):
+        for tick in self.axes.get_xticklabels():
+            tick.set_rotation(ANGLE_TICK_LABELS_X_AXIS)
+
+    def _set_locators_and_formatters(self):
+        self.axes.xaxis.set_major_locator(dates.DayLocator())
+        self.axes.xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
+        self.axes.xaxis.set_minor_locator(dates.HourLocator(byhour=range(0, 24, 1)))
+        self.axes.xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
+
+    def _apply_settings(self):
+        if self._lim_low:
+            self.axes.set_xlim(left=self._lim_low)
+        if self._lim_high:
+            self.axes.set_xlim(right=self._lim_high)
+        if self._label:
+            self.axes.set_xlabel(self._label)
+        self._set_locators_and_formatters()
+        self._set_visibility_grid()
+        self._set_angle_tick_labels()
 
 
 class SobekGraph:
@@ -15,29 +90,21 @@ class SobekGraph:
     PAD = 1.2
 
     def __init__(self,
-                 ylabel = None,
-                 xlabel = None,
                  width_cm = 14.0,
-                 height_cm = 9.0,
-                 title = None,
-                 xlim_left = None,
-                 xlim_right = None,
-                 ylim_bottom = None,
-                 ylim_top = None,
-                 angle_labels_xaxis = 90):
+                 height_cm = 9.0):
 
         # TODO: docstring
         # TODO: add unit to xlim_left and xlim_right
-        self.figure = self._make_figure_timeseries(ylabel=ylabel,
-                                                   xlabel=xlabel,
-                                                   width_cm=width_cm,
-                                                   height_cm=height_cm,
-                                                   title=title,
-                                                   xlim_left=xlim_left,
-                                                   xlim_right=xlim_right,
-                                                   ylim_bottom=ylim_bottom,
-                                                   ylim_top=ylim_top,
-                                                   angle_labels_xaxis=angle_labels_xaxis)
+
+        self.width = self._cm_to_inch(width_cm)
+        self.height = self._cm_to_inch(height_cm)
+
+        self.figure = plt.figure(figsize=(self.width, self.height))
+        self.axes = self.figure.add_subplot(111)
+
+        self.title = _Title(self.axes)
+        self.x_axis = _Xaxis(self.axes)
+
         self.labels_legend = []
 
 
@@ -154,78 +221,49 @@ class SobekGraph:
     def _convert_lst_datetime_to_dates(lst_datetime):
         return [dates.date2num(datetm) for datetm in lst_datetime]
 
-    def _make_figure_timeseries(self,
-                                ylabel,
-                                xlabel,
-                                width_cm,
-                                height_cm,
-                                title,
-                                xlim_left,
-                                xlim_right,
-                                ylim_bottom,
-                                ylim_top,
-                                angle_labels_xaxis):
-
-        # HELP:
-        # figure = figure that can contain multiple graphs
-        # axes = a graph
-        # axis = axis of a graph
-
-        # LOCATORS determine the location of ticks (x and y axis)
-        # FORMATTERS determine the layout of ticks (x and y axis)
-
-        width = self._cm_to_inch(width_cm)
-        height = self._cm_to_inch(height_cm)
-
-        figure = plt.figure(figsize=(width, height))
-        axes = figure.add_subplot(111)
-
-        # show range x axis:
-        if xlim_right and not xlim_left:
-            axes.set_xlim(right=xlim_right)
-        if not xlim_right and xlim_left:
-            axes.set_xlim(left=xlim_left)
-        if xlim_right and xlim_left:
-            axes.set_xlim(right=xlim_right, left=xlim_left)
-
-        # show range y axis:
-        if ylim_top and not ylim_bottom:
-            axes.set_ylim(top=ylim_top)
-        if not ylim_top and ylim_bottom:
-            axes.set_ylim(bottom=ylim_bottom)
-        if ylim_top and ylim_bottom:
-            axes.set_ylim(top=ylim_top, bottom=ylim_bottom)
-
-        # title:
-        if title: axes.set_title(title)
-
-        # labels x and y axis:
-        if xlabel: axes.set_xlabel(xlabel)
-        if ylabel: axes.set_ylabel(ylabel)
-
-        # LAYOUT X-AS
-        # LOCATORS determine the location of ticks
-        # TODO: determine interval on the basis of the scope
-        for tick in axes.get_xticklabels():
-            tick.set_rotation(angle_labels_xaxis)
-        axes.xaxis.set_major_locator(dates.DayLocator(bymonthday=range(1, 32), interval=1))
-        axes.xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
-        axes.xaxis.set_minor_locator(dates.HourLocator(byhour=range(0, 24, 6)))
-        # ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
-        axes.xaxis.grid(which="major", linewidth=1.5)
-        axes.xaxis.grid(which="minor")
-
-        # LAYOUT Y-AS
-        axes.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
-        axes.yaxis.grid(True, which="major", linewidth=1)
-
-        # Further layout:
-        figure.tight_layout(pad=self.PAD)
-
-        # Finish:
-        return figure
+    # def _make_figure_timeseries(self,
+    #                             ylabel,
+    #                             ylim_bottom,
+    #                             ylim_top,
+    #                             angle_labels_xaxis):
+    #
+    #     # HELP:
+    #     # figure = figure that can contain multiple graphs
+    #     # axes = a graph
+    #     # axis = axis of a graph
+    #
+    #     # LOCATORS determine the location of ticks (x and y axis)
+    #     # FORMATTERS determine the layout of ticks (x and y axis)
+    #
+    #
+    #
+    #     # show range y axis:
+    #     if ylim_top and not ylim_bottom:
+    #         axes.set_ylim(top=ylim_top)
+    #     if not ylim_top and ylim_bottom:
+    #         axes.set_ylim(bottom=ylim_bottom)
+    #     if ylim_top and ylim_bottom:
+    #         axes.set_ylim(top=ylim_top, bottom=ylim_bottom)
+    #
+    #
+    #     # labels x and y axis:
+    #
+    #     if ylabel: axes.set_ylabel(ylabel)
+    #
+    #
+    #     # LAYOUT Y-AS
+    #     axes.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
+    #     axes.yaxis.grid(True, which="major", linewidth=1)
+    #
+    #     # Further layout:
+    #     figure.tight_layout(pad=self.PAD)
+    #
+    #     # Finish:
+    #     return figure
 
     def show(self):
+        self.title._apply_settings()
+        self.x_axis._apply_settings()
         self.figure.axes[0].legend(self.labels_legend)
         self.figure.show()
 
