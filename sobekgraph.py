@@ -26,14 +26,14 @@ class _Title:
         if self._title:
             self.axes.set_title(self._title)
 
-class _Xaxis:
+class _Axis:
 
     _title = None
     _label = None
     _lim_low = None
     _lim_high = None
-    _major_grid_visible = DEFAULT_MAJOR_GRID_X_AXIS_VISIBLE
-    _minor_grid_visible = DEFAULT_MINOR_GRID_X_AXIS_VISIBLE
+    _major_grid_visible = None
+    _minor_grid_visible = None
 
     def __init__(self, axes):
         self.axes = axes
@@ -53,21 +53,31 @@ class _Xaxis:
     def set_minor_grid_visible(self, visible):
         self._minor_grid_visible = visible
 
-    def _set_visibility_grid(self):
+    def _set_visibility_grid(self, axis):
         if self._major_grid_visible == True:
-            self.axes.xaxis.grid(b=True, which="major", linewidth=LINEWIDTH_MAJOR_GRID)
+            axis.grid(b=True, which="major", linewidth=LINEWIDTH_MAJOR_GRID)
         else:
-            self.axes.xaxis.grid(b=False, which="major")
+            axis.grid(b=False, which="major")
         if self._minor_grid_visible == True:
-            self.axes.xaxis.grid(b=True, which="minor", linewidth=LINEWIDTH_MINOR_GRID)
+            axis.grid(b=True, which="minor", linewidth=LINEWIDTH_MINOR_GRID)
         else:
-            self.axes.xaxis.grid(b=False, which="minor")
+            axis.grid(b=False, which="minor")
+
+
+class _Xaxis(_Axis):
+
+    def __init__(self, axes):
+        super().__init__(axes)
+        self._major_grid_visible = DEFAULT_MAJOR_GRID_X_AXIS_VISIBLE
+        self._minor_grid_visible = DEFAULT_MINOR_GRID_X_AXIS_VISIBLE
 
     def _set_angle_tick_labels(self):
         for tick in self.axes.get_xticklabels():
             tick.set_rotation(ANGLE_TICK_LABELS_X_AXIS)
 
     def _set_locators_and_formatters(self):
+        # LOCATORS determine the location of ticks
+        # FORMATTERS determine the layout of ticks
         self.axes.xaxis.set_major_locator(dates.DayLocator())
         self.axes.xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
         self.axes.xaxis.set_minor_locator(dates.HourLocator(byhour=range(0, 24, 1)))
@@ -81,11 +91,40 @@ class _Xaxis:
         if self._label:
             self.axes.set_xlabel(self._label)
         self._set_locators_and_formatters()
-        self._set_visibility_grid()
+        self._set_visibility_grid(self.axes.xaxis)
         self._set_angle_tick_labels()
 
 
+class _Yaxis(_Axis):
+
+    def __init__(self, axes):
+        super().__init__(axes)
+        self._major_grid_visible = DEFAULT_MAJOR_GRID_Y_AXIS_VISIBLE
+        self._minor_grid_visible = DEFAULT_MINOR_GRID_Y_AXIS_VISIBLE
+
+    def _set_locators_and_formatters(self):
+        # LOCATORS determine the location of ticks
+        # FORMATTERS determine the layout of ticks
+        self.axes.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
+        self.axes.yaxis.grid(True, which="major", linewidth=1)
+
+    def _apply_settings(self):
+        if self._lim_low:
+            self.axes.set_ylim(bottom=self._lim_low)
+        if self._lim_high:
+            self.axes.set_ylim(top=self._lim_high)
+        if self._label:
+            self.axes.set_ylabel(self._label)
+        self._set_locators_and_formatters()
+        self._set_visibility_grid(self.axes.yaxis)
+
+
 class SobekGraph:
+
+    # Names in Matplotlib:
+    # figure = figure that can contain multiple graphs
+    # axes = a graph
+    # axis = axis of a graph
 
     PAD = 1.2
 
@@ -104,9 +143,9 @@ class SobekGraph:
 
         self.title = _Title(self.axes)
         self.x_axis = _Xaxis(self.axes)
+        self.y_axis = _Yaxis(self.axes)
 
         self.labels_legend = []
-
 
     @staticmethod
     def print_info_about_sobek_data_file(str_sob_dir,
@@ -221,52 +260,21 @@ class SobekGraph:
     def _convert_lst_datetime_to_dates(lst_datetime):
         return [dates.date2num(datetm) for datetm in lst_datetime]
 
-    # def _make_figure_timeseries(self,
-    #                             ylabel,
-    #                             ylim_bottom,
-    #                             ylim_top,
-    #                             angle_labels_xaxis):
-    #
-    #     # HELP:
-    #     # figure = figure that can contain multiple graphs
-    #     # axes = a graph
-    #     # axis = axis of a graph
-    #
-    #     # LOCATORS determine the location of ticks (x and y axis)
-    #     # FORMATTERS determine the layout of ticks (x and y axis)
-    #
-    #
-    #
-    #     # show range y axis:
-    #     if ylim_top and not ylim_bottom:
-    #         axes.set_ylim(top=ylim_top)
-    #     if not ylim_top and ylim_bottom:
-    #         axes.set_ylim(bottom=ylim_bottom)
-    #     if ylim_top and ylim_bottom:
-    #         axes.set_ylim(top=ylim_top, bottom=ylim_bottom)
-    #
-    #
-    #     # labels x and y axis:
-    #
-    #     if ylabel: axes.set_ylabel(ylabel)
-    #
-    #
-    #     # LAYOUT Y-AS
-    #     axes.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
-    #     axes.yaxis.grid(True, which="major", linewidth=1)
-    #
-    #     # Further layout:
-    #     figure.tight_layout(pad=self.PAD)
-    #
-    #     # Finish:
-    #     return figure
+    def _apply_general_layout_to_figure(self):
+        self.figure.tight_layout(pad=self.PAD)
 
-    def show(self):
+    def _apply_settings_to_graph(self):
         self.title._apply_settings()
         self.x_axis._apply_settings()
+        self.y_axis._apply_settings()
         self.figure.axes[0].legend(self.labels_legend)
+        self._apply_general_layout_to_figure()
+
+    def show(self):
+        self._apply_settings_to_graph()
         self.figure.show()
 
     def save_as_image_file(self, filename, dpi=200):
         # TODO: docstring, output format
+        self._apply_settings_to_graph()
         self.figure.savefig(filename, dpi=dpi)
