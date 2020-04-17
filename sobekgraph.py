@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from settings import *
 import sobekdatafetcher
 
+
 class _Title:
 
     _title = None
@@ -75,13 +76,29 @@ class _Xaxis(_Axis):
         for tick in self.axes.get_xticklabels():
             tick.set_rotation(ANGLE_TICK_LABELS_X_AXIS)
 
+    def _get_locator_and_formatters(self, days_per_cm):
+        for lower_lim, dict_locators_and_formatters in VALUES_AUTO_X_AXIS_FORMATTER:
+            if days_per_cm > lower_lim:
+                return dict_locators_and_formatters
+        print(f"WARNING: locators and formatters could not be set according to scope. \nScope [days] = {days_per_cm}\n")
+        return None
+
     def _set_locators_and_formatters(self):
         # LOCATORS determine the location of ticks
         # FORMATTERS determine the layout of ticks
-        self.axes.xaxis.set_major_locator(dates.DayLocator())
-        self.axes.xaxis.set_major_formatter(dates.DateFormatter('%m-%d'))
-        self.axes.xaxis.set_minor_locator(dates.HourLocator(byhour=range(0, 24, 1)))
-        self.axes.xaxis.set_major_formatter(dates.DateFormatter('%H:%M'))
+
+        scope_days = self.axes.viewLim.width
+        width_axes_inch = self.axes.get_window_extent().transformed(self.axes.figure.dpi_scale_trans.inverted()).width
+        width_axes_cm = width_axes_inch * 2.54
+        days_per_cm = scope_days / width_axes_cm
+        print(days_per_cm)
+
+        locators_and_formatters = self._get_locator_and_formatters(days_per_cm)
+        if locators_and_formatters:
+            self.axes.xaxis.set_major_locator(locators_and_formatters['major_locator'])
+            self.axes.xaxis.set_major_formatter(locators_and_formatters['major_formatter'])
+            self.axes.xaxis.set_minor_locator(locators_and_formatters['minor_locator'])
+            self.axes.xaxis.set_minor_formatter(locators_and_formatters['minor_formatter'])
 
     def _apply_settings(self):
         if self._lim_low:
