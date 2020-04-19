@@ -1,7 +1,10 @@
 import matplotlib.ticker as ticker
 import matplotlib.dates as dates
 
-# settings SobekGraph
+# ___________________
+# SETTINGS SOBEKGRAPH
+
+
 DEFAULT_MAJOR_GRID_X_AXIS_VISIBLE = True
 DEFAULT_MINOR_GRID_X_AXIS_VISIBLE = False
 DEFAULT_MAJOR_GRID_Y_AXIS_VISIBLE = True
@@ -12,53 +15,83 @@ LINEWIDTH_MINOR_GRID = 0.5
 
 ANGLE_TICK_LABELS_X_AXIS = 90
 
+# These are te possible units for the ticks of the y-axis (* 10 ** x).
+# - first unit must be 1
+# - last unit must be 10
+# - units have to be sorted ascending
+UNITS_AUTO_Y_AXIS_FORMATTER = [1, 2.5, 5, 10]
+DESIRED_WIDTH_TICKS_Y_AXIS_CM = 2
+
+# the numbers represent the lower boundary of the classes
 # unit numbers: [days / cm]
-VALUES_AUTO_X_AXIS_FORMATTER = ((50,
+# numbers have to be sorted descending
+VALUES_AUTO_X_AXIS_FORMATTER = ((75,
                                  {
                                      'major_locator': dates.YearLocator(),
-                                     'major_formatter': dates.DateFormatter('A %Y'),
+                                     'major_formatter': dates.DateFormatter('%Y'),
                                      'minor_locator': dates.MonthLocator(interval=3),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),
-                                (4.70968,
+                                (38,
+                                 {
+                                     'major_locator': dates.MonthLocator(bymonth=[1,4,7,10]),
+                                     'major_formatter': dates.DateFormatter('%b %Y'),
+                                     'minor_locator': dates.MonthLocator(interval=1),
+                                     'minor_formatter': ticker.NullFormatter()
+                                 }),
+                                (5,
                                  {
                                      'major_locator': dates.MonthLocator(),
-                                     'major_formatter': dates.DateFormatter('B %b %Y'),
+                                     'major_formatter': dates.DateFormatter('%b %Y'),
                                      'minor_locator': dates.WeekdayLocator(),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),
-                                (0.94194,
+                                (0.7,
                                  {
                                      'major_locator': dates.WeekdayLocator(),
-                                     'major_formatter': dates.DateFormatter('C %d-%m-%Y'),
+                                     'major_formatter': dates.DateFormatter('%d-%m-%Y'),
                                      'minor_locator': dates.DayLocator(),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),
-                                (0.18839,
+                                (0.2,
                                  {
                                      'major_locator': dates.DayLocator(),
-                                     'major_formatter': dates.DateFormatter('D %d-%m-%Y'),
+                                     'major_formatter': dates.DateFormatter('%d-%m-%Y'),
                                      'minor_locator': dates.HourLocator(byhour=range(0, 24, 6)),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),
-                                (0.037677,
+                                (0.07,
                                  {
                                      'major_locator': dates.HourLocator(byhour=range(0, 24, 6)),
-                                     'major_formatter': dates.DateFormatter('E %d-%m-%y  %H:%M'),
+                                     'major_formatter': dates.DateFormatter('%d-%m-%y  %H:%M'),
                                      'minor_locator': dates.HourLocator(byhour=range(0, 24, 1)),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),
-                                (0.0075355,
+                                (0.028,
                                  {
                                      'major_locator': dates.HourLocator(byhour=range(0, 24, 3)),
-                                     'major_formatter': dates.DateFormatter('6 %d-%m-%y  %H:%M'),
+                                     'major_formatter': dates.DateFormatter('%d-%m-%y  %H:%M'),
                                      'minor_locator': dates.HourLocator(byhour=range(0, 24, 1)),
+                                     'minor_formatter': ticker.NullFormatter()
+                                 }),
+                                (0.01,
+                                 {
+                                     'major_locator': dates.HourLocator(byhour=range(0, 24, 1)),
+                                     'major_formatter': dates.DateFormatter('%d-%m-%y  %H:%M'),
+                                     'minor_locator': dates.MinuteLocator(interval=15),
+                                     'minor_formatter': ticker.NullFormatter()
+                                 }),
+                                (0.005,
+                                 {
+                                     'major_locator': dates.MinuteLocator(interval=15),
+                                     'major_formatter': dates.DateFormatter('%d-%m-%y  %H:%M'),
+                                     'minor_locator': dates.MinuteLocator(interval=5),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),
                                 (0.0,
                                  {
                                      'major_locator': dates.MinuteLocator(interval=5),
-                                     'major_formatter': dates.DateFormatter('7 %d-%m-%y  %H:%M'),
+                                     'major_formatter': dates.DateFormatter('%d-%m-%y  %H:%M'),
                                      'minor_locator': dates.MinuteLocator(interval=1),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),

@@ -6,7 +6,7 @@ import resultsat
 
 xls_path = r"tests\testdata\test.xlsx"
 
-sbkgraph = sobekgraph.SobekGraph(height_cm=13, width_cm=30)
+sbkgraph = sobekgraph.SobekGraph(height_cm=10, width_cm=20)
 sbkgraph.x_axis.set_major_grid_visible(True)
 sbkgraph.x_axis.set_minor_grid_visible(True)
 
@@ -18,18 +18,25 @@ sbkgraph.add_excel_data(xls_path,
 
 sbkgraph.x_axis.set_lower_limit(datetime.datetime(2010, 1, 1))
 
-sbkgraph.show()
+# sbkgraph.show()
 sbkgraph.x_axis.set_upper_limit(datetime.datetime(2011, 1, 2))
-sbkgraph.show()
-sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 12, 31))
+
+sbkgraph.y_axis.set_upper_limit(0.5)
+sbkgraph.y_axis.set_lower_limit(-0.5)
+
 sbkgraph.show()
 # sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 7))
 # sbkgraph.show()
-# sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 2))
+# sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 4))
 # sbkgraph.show()
 # sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 1, 12))
+# sbkgraph.show()
+# sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 1, 6))
+# sbkgraph.show()
+# sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 1, 3))
 # sbkgraph.show()
 # sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 1, 1))
 # sbkgraph.show()
 # sbkgraph.x_axis.set_upper_limit(datetime.datetime(2010, 1, 1, 0, 30))
 # sbkgraph.show()
+

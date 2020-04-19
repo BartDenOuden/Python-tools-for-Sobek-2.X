@@ -1,12 +1,11 @@
 """This module contains a class to make graphs showing Sobek data.
-Bart den Ouden, october 2019
+Bart den Ouden, october 2019, april 2020
 bart@bartdenoudenwateradvies.nl"""
 
-import datetime
+import math
 
+import numpy as np
 import pandas as pd
-import matplotlib.ticker as ticker
-import matplotlib.dates as dates
 import matplotlib.pyplot as plt
 
 from settings import *
@@ -76,7 +75,7 @@ class _Xaxis(_Axis):
         for tick in self.axes.get_xticklabels():
             tick.set_rotation(ANGLE_TICK_LABELS_X_AXIS)
 
-    def _get_locator_and_formatters(self, days_per_cm):
+    def _get_locators_and_formatters(self, days_per_cm):
         for lower_lim, dict_locators_and_formatters in VALUES_AUTO_X_AXIS_FORMATTER:
             if days_per_cm > lower_lim:
                 return dict_locators_and_formatters
@@ -91,9 +90,9 @@ class _Xaxis(_Axis):
         width_axes_inch = self.axes.get_window_extent().transformed(self.axes.figure.dpi_scale_trans.inverted()).width
         width_axes_cm = width_axes_inch * 2.54
         days_per_cm = scope_days / width_axes_cm
-        print(days_per_cm)
+        # print(days_per_cm)
 
-        locators_and_formatters = self._get_locator_and_formatters(days_per_cm)
+        locators_and_formatters = self._get_locators_and_formatters(days_per_cm)
         if locators_and_formatters:
             self.axes.xaxis.set_major_locator(locators_and_formatters['major_locator'])
             self.axes.xaxis.set_major_formatter(locators_and_formatters['major_formatter'])
@@ -119,10 +118,36 @@ class _Yaxis(_Axis):
         self._major_grid_visible = DEFAULT_MAJOR_GRID_Y_AXIS_VISIBLE
         self._minor_grid_visible = DEFAULT_MINOR_GRID_Y_AXIS_VISIBLE
 
+    @staticmethod
+    def e_power(x):
+        return math.floor(math.log(abs(x), 10))
+
+    def _multiple_for_locator(self, units_per_major_tick):
+
+        power = self.e_power(units_per_major_tick)
+        multiple = units_per_major_tick * 10 ** -power
+
+        target_values = np.array(UNITS_AUTO_Y_AXIS_FORMATTER)
+        borders = (target_values[1:] + target_values[:-1]) / 2
+
+        for border, target_value in zip(borders, target_values):
+            if multiple < border:
+                multiple = target_value
+                return multiple * 10 ** power
+        return target_values[-1] * 10 ** power
+
     def _set_locators_and_formatters(self):
-        # LOCATORS determine the location of ticks
+        # LOCATORS in a matplotlib graph (axes) determine the location of ticks
         # FORMATTERS determine the layout of ticks
-        self.axes.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
+
+        scope = self.axes.viewLim.height
+        height_axes_inch = self.axes.get_window_extent().transformed(self.axes.figure.dpi_scale_trans.inverted()).height
+        height_axes_cm = height_axes_inch * 2.54
+        units_per_cm = scope / height_axes_cm
+        units_per_major_tick = units_per_cm * DESIRED_WIDTH_TICKS_Y_AXIS_CM
+        multiple = self._multiple_for_locator(units_per_major_tick)
+
+        self.axes.yaxis.set_major_locator(ticker.MultipleLocator(multiple))
         self.axes.yaxis.grid(True, which="major", linewidth=1)
 
     def _apply_settings(self):
@@ -278,6 +303,7 @@ class SobekGraph:
         return [dates.date2num(datetm) for datetm in lst_datetime]
 
     def _apply_general_layout_to_figure(self):
+        # TODO: add setting layout to API
         self.figure.tight_layout(pad=self.PAD)
 
     def _apply_settings_to_graph(self):
@@ -295,3 +321,5 @@ class SobekGraph:
         # TODO: docstring, output format
         self._apply_settings_to_graph()
         self.figure.savefig(filename, dpi=dpi)
+
+# TODO: unit tests
