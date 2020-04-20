@@ -4,6 +4,8 @@ import matplotlib.dates as dates
 # ___________________
 # SETTINGS SOBEKGRAPH
 
+DEFAULT_WIDTH_FIGURE_CM = 14
+DEFAULT_HEIGHT_FIGURE_CM = 12
 
 DEFAULT_MAJOR_GRID_X_AXIS_VISIBLE = True
 DEFAULT_MINOR_GRID_X_AXIS_VISIBLE = False
@@ -25,6 +27,7 @@ DESIRED_WIDTH_TICKS_Y_AXIS_CM = 2
 # the numbers represent the lower boundary of the classes
 # unit numbers: [days / cm]
 # numbers have to be sorted descending
+# THE LAST UNIT NUMBER MUST BE ZERO (VALUES_AUTO_X_AXIS_FORMATTER[-1][0] == 0).
 VALUES_AUTO_X_AXIS_FORMATTER = ((75,
                                  {
                                      'major_locator': dates.YearLocator(),
@@ -88,7 +91,7 @@ VALUES_AUTO_X_AXIS_FORMATTER = ((75,
                                      'minor_locator': dates.MinuteLocator(interval=5),
                                      'minor_formatter': ticker.NullFormatter()
                                  }),
-                                (0.0,
+                                (0,
                                  {
                                      'major_locator': dates.MinuteLocator(interval=5),
                                      'major_formatter': dates.DateFormatter('%d-%m-%y  %H:%M'),

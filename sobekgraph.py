@@ -2,6 +2,8 @@
 Bart den Ouden, october 2019, april 2020
 bart@bartdenoudenwateradvies.nl"""
 
+__version__ = 1.0
+
 import math
 
 import numpy as np
@@ -25,6 +27,7 @@ class _Title:
     def _apply_settings(self):
         if self._title:
             self.axes.set_title(self._title)
+
 
 class _Axis:
 
@@ -75,8 +78,11 @@ class _Xaxis(_Axis):
         for tick in self.axes.get_xticklabels():
             tick.set_rotation(ANGLE_TICK_LABELS_X_AXIS)
 
-    def _get_locators_and_formatters(self, days_per_cm):
-        for lower_lim, dict_locators_and_formatters in VALUES_AUTO_X_AXIS_FORMATTER:
+    def _get_locators_and_formatters(self,
+                                     days_per_cm,
+                                     locators_and_formatters=VALUES_AUTO_X_AXIS_FORMATTER):
+
+        for lower_lim, dict_locators_and_formatters in locators_and_formatters:
             if days_per_cm > lower_lim:
                 return dict_locators_and_formatters
         print(f"WARNING: locators and formatters could not be set according to scope. \nScope [days] = {days_per_cm}\n")
@@ -119,15 +125,17 @@ class _Yaxis(_Axis):
         self._minor_grid_visible = DEFAULT_MINOR_GRID_Y_AXIS_VISIBLE
 
     @staticmethod
-    def e_power(x):
+    def _e_power(x):
         return math.floor(math.log(abs(x), 10))
 
-    def _multiple_for_locator(self, units_per_major_tick):
+    def _multiple_for_locator(self,
+                              units_per_major_tick,
+                              target_values=UNITS_AUTO_Y_AXIS_FORMATTER):
 
-        power = self.e_power(units_per_major_tick)
+        power = self._e_power(units_per_major_tick)
         multiple = units_per_major_tick * 10 ** -power
 
-        target_values = np.array(UNITS_AUTO_Y_AXIS_FORMATTER)
+        target_values = np.array(target_values)
         borders = (target_values[1:] + target_values[:-1]) / 2
 
         for border, target_value in zip(borders, target_values):
@@ -136,19 +144,24 @@ class _Yaxis(_Axis):
                 return multiple * 10 ** power
         return target_values[-1] * 10 ** power
 
+    def _units_per_major_tick(self,
+                              scope,
+                              height_axes_inch,
+                              desired_width_ticks_y_axis_cm=DESIRED_WIDTH_TICKS_Y_AXIS_CM):
+
+        height_axes_cm = height_axes_inch * 2.54
+        units_per_cm = scope / height_axes_cm
+        units_per_major_tick = units_per_cm * desired_width_ticks_y_axis_cm
+        return units_per_major_tick
+
     def _set_locators_and_formatters(self):
         # LOCATORS in a matplotlib graph (axes) determine the location of ticks
         # FORMATTERS determine the layout of ticks
-
         scope = self.axes.viewLim.height
         height_axes_inch = self.axes.get_window_extent().transformed(self.axes.figure.dpi_scale_trans.inverted()).height
-        height_axes_cm = height_axes_inch * 2.54
-        units_per_cm = scope / height_axes_cm
-        units_per_major_tick = units_per_cm * DESIRED_WIDTH_TICKS_Y_AXIS_CM
+        units_per_major_tick = self._units_per_major_tick(scope=scope, height_axes_inch=height_axes_inch)
         multiple = self._multiple_for_locator(units_per_major_tick)
-
         self.axes.yaxis.set_major_locator(ticker.MultipleLocator(multiple))
-        self.axes.yaxis.grid(True, which="major", linewidth=1)
 
     def _apply_settings(self):
         if self._lim_low:
@@ -168,26 +181,32 @@ class SobekGraph:
     # axes = a graph
     # axis = axis of a graph
 
-    PAD = 1.2
-
     def __init__(self,
-                 width_cm = 14.0,
-                 height_cm = 9.0):
+                 width_cm=DEFAULT_WIDTH_FIGURE_CM,
+                 height_cm=DEFAULT_HEIGHT_FIGURE_CM):
 
-        # TODO: docstring
-        # TODO: add unit to xlim_left and xlim_right
+        self.width_cm = DEFAULT_WIDTH_FIGURE_CM
+        self.height_cm = DEFAULT_HEIGHT_FIGURE_CM
 
-        self.width = self._cm_to_inch(width_cm)
-        self.height = self._cm_to_inch(height_cm)
+        self.only_use_figure_and_axes_to_make_settings = False
 
-        self.figure = plt.figure(figsize=(self.width, self.height))
+        self.figure = plt.figure(figsize=(self._cm_to_inch(width_cm), self._cm_to_inch(height_cm)))
         self.axes = self.figure.add_subplot(111)
 
         self.title = _Title(self.axes)
+
         self.x_axis = _Xaxis(self.axes)
         self.y_axis = _Yaxis(self.axes)
 
         self.labels_legend = []
+
+        self.tests()
+
+
+    def tests(self):
+        if not VALUES_AUTO_X_AXIS_FORMATTER[-1][0] == 0:
+            print(f"WARNING: The last unit number  of settings.VALUES_AUTO_X_AXIS_FORMATTER must be zero \n(VALUES_AUTO_X_AXIS_FORMATTER[-1][0] == 0)\nThe value now is: {VALUES_AUTO_X_AXIS_FORMATTER[-1][0]}")
+            print("Please change this value to 0 and start again. ")
 
     @staticmethod
     def print_info_about_sobek_data_file(str_sob_dir,
@@ -302,24 +321,21 @@ class SobekGraph:
     def _convert_lst_datetime_to_dates(lst_datetime):
         return [dates.date2num(datetm) for datetm in lst_datetime]
 
-    def _apply_general_layout_to_figure(self):
-        # TODO: add setting layout to API
-        self.figure.tight_layout(pad=self.PAD)
-
     def _apply_settings_to_graph(self):
-        self.title._apply_settings()
-        self.x_axis._apply_settings()
-        self.y_axis._apply_settings()
-        self.figure.axes[0].legend(self.labels_legend)
-        self._apply_general_layout_to_figure()
+        if not self.only_use_figure_and_axes_to_make_settings:
+            self.title._apply_settings()
+            self.x_axis._apply_settings()
+            self.y_axis._apply_settings()
+            self.axes.legend(self.labels_legend)
+            self.figure.tight_layout()
 
     def show(self):
         self._apply_settings_to_graph()
         self.figure.show()
 
-    def save_as_image_file(self, filename, dpi=200):
-        # TODO: docstring, output format
+    def save_as_png_file(self, path, dpi=200):
+        "Outputs a png image file to given path. "
         self._apply_settings_to_graph()
-        self.figure.savefig(filename, dpi=dpi)
+        self.figure.savefig(path, dpi=dpi)
 
-# TODO: unit tests
+    # TODO: change unit y-axis, for example meter to milimeter. Actual data stays the same; just the ticklabels change.
