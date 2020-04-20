@@ -21,14 +21,22 @@ case_2 ='Case 2 of dummy model for examples Python tools'
 
 # Python version: 3.6 or later.
 
-# Sobekgraph needs the following libraries:
+# sobekgraph.py needs the following libraries:
 # numpy
 # pandas
 # matplotlib
 
-# To install them you can use pip or conda:
+# Installing just pandas should be enough as it depends on both numpy and matplotlib.
+# To install libraries you can use pip or conda:
 # https://docs.python.org/3/installing/index.html
 # https://docs.conda.io/en/latest/miniconda.html
+
+# sobekgraph.py depends on the following other files that are part of python tools for Sobek:
+# sobekdatafetcher.py
+# settings.py
+# resultsat.py
+
+# Make sure these files are placed in the same directory as this file and sobekgraph.py.
 
 
 # ------------
