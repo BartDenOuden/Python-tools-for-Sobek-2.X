@@ -22,7 +22,7 @@ ANGLE_TICK_LABELS_X_AXIS = 90
 # - last unit must be 10
 # - units have to be sorted ascending
 UNITS_AUTO_Y_AXIS_FORMATTER = [1, 2.5, 5, 10]
-DESIRED_WIDTH_TICKS_Y_AXIS_CM = 2
+DESIRED_WIDTH_TICKS_Y_AXIS_CM = 1.7
 
 # the numbers represent the lower boundary of the classes
 # unit numbers: [days / cm]

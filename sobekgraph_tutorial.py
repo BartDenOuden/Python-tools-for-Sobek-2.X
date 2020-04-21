@@ -57,14 +57,14 @@ first_sbkgraph.add_sobek_data(str_sob_dir=sobek_dir,
                               list_str_ids_sobek_to_get_data_from=['1_15']
                               )
 
-# 3. Show the graph, or export it as a file:
+# 3. Show the graph,
 first_sbkgraph.show()
 # or export it as a file:
 first_sbkgraph.save_as_png_file("image_files/first_sbkgraph", dpi=150)
 
 
 # ------------------------
-# FEATURES OF A SOBEKGRAPH
+# FEATURES OF SOBEKGRAPH
 # ------------------------
 
 # Sobekgraph uses the matplotlib library to make graphs of Sobek data.
@@ -77,11 +77,11 @@ first_sbkgraph.save_as_png_file("image_files/first_sbkgraph", dpi=150)
 # OVERVIEW ELEMENTS OF A SOBEKGRAPH
 # ---------------------------------
 
-# A SobekGraph has the following (public) objects:
+# A SobekGraph object has the following (public) objects:
 # - .x_axis and .y_axis, with which you can set  lower_limit, upper_limit, label and grid visibility of these axis;
-# - .title, with which you can set the title;
-# - .figure, with which you can access the matplotlib figure that contains the graph (= axes);
-# - .axes, with which you can access the matplotlib axes (= the graph).
+# - .title, which you can set the title with;
+# - .figure, which you can access the matplotlib figure with that contains the graph (= axes);
+# - .axes, which you can access the matplotlib axes (= the graph) with.
 
 
 # -------------
@@ -105,14 +105,13 @@ first_sbkgraph.save_as_png_file("image_files/first_sbkgraph", dpi=150)
 sbkgraph_1 = sobekgraph.SobekGraph(width_cm=14, height_cm=16)
 sbkgraph_1.title.set_title("Example adding data")
 
-# ADDING SOBEK DATA
 # To get an overview of the Sobek data in an Hisfile you can use:
 sbkgraph_1.print_info_about_sobek_data_file(str_sob_dir=sobek_dir,
                                             str_lit=sobek_lit,
                                             str_case=case_1,
                                             results_at=resultsat.RESULTS_AT_REACHSEGMENTS)
 
-# In the information printed you can see the his file has two parameters:
+# In the information printed you can see this his-file has two parameters:
 # 0: discharge
 # 1: velocity
 
@@ -151,6 +150,8 @@ sbkgraph_1.add_excel_data(xls_path,
 # The first column in the Excel table next to the dates has index 0.
 # Typically this will be the second column in the Excel sheet.
 
+# The data in the Excel file can have a time step that differs from the time step of the Sobek data.
+
 # Finally we add a label to the y-axis and show the graph:
 sbkgraph_1.y_axis.set_label('Q [m$^3$/s]')
 sbkgraph_1.show()
@@ -171,12 +172,12 @@ sbkgraph_2.add_sobek_data(str_sob_dir=sobek_dir,
                           list_str_ids_sobek_to_get_data_from=['1_1','1_15'],
                           list_str_labels_legend=['Case 1, rs 1_1', 'Case 1, rs 1_15'])
 
-# To adjust the scope of the x-axis use a DateTime object from the python datetime library
+# To adjust the scope of the x-axis use a datetime object from the standard python library 'datetime':
 import datetime
-date = datetime.datetime(2020,4,15,18)
-sbkgraph_2.x_axis.set_lower_limit(limit_datetime=date)
-date = datetime.datetime(2020,4,16)
-sbkgraph_2.x_axis.set_upper_limit(limit_datetime=date)
+start_date = datetime.datetime(2020,4,15,18)
+sbkgraph_2.x_axis.set_lower_limit(limit_datetime=start_date)
+end_date = datetime.datetime(2020,4,16)
+sbkgraph_2.x_axis.set_upper_limit(limit_datetime=end_date)
 
 # Adjust y-axis:
 sbkgraph_2.y_axis.set_upper_limit(.4)
