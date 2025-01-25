@@ -1,4 +1,4 @@
-"""Class for reading data from Sobek HIS files
+"""Class for reading results from Sobek HIS files
 
 Bart den Ouden Wateradvies,
 4 january 2014
@@ -6,6 +6,7 @@ Bart den Ouden Wateradvies,
 januari 2025: refactoring, verbeteringen
 """
 
+from dataclasses import dataclass
 import datetime
 import os
 from pathlib import Path
@@ -13,6 +14,8 @@ import re
 import struct
 import sys
 from typing import Optional
+
+from openpyxl import Workbook, load_workbook
 
 import resultsat
 
@@ -23,6 +26,10 @@ import resultsat
 # 4. locaties [volgnummer en string Id, integer 4 bytes gevolgd door string 20 tekens, ... aantal locaties]
 # 5. tijdstap en berekeningsresultaten, integer 4 bytes aantal tijdstappen, floats 4 bytes, gegroepeerd per locaties (node1par1, node1par2, node1par3, node2par1, node2par2, node2par3, ...)
 
+
+MAX_COLUMNS_EXCEL = 16_384
+MAX_ROWS_EXCEL = 1_048_576
+DATA_START_ROW_EXCEL = 2  # First row is headers
 
 NM_CASELIST = 'CASELIST.CMT'
 
@@ -45,14 +52,98 @@ LEN_STR_TIME = 8
 LEN_STR_DATE_TIME_TIMESTEP = 36
 
 
-def _convert_bytestring_to_float(bytestring):
+def _convert_bytestring_to_float(bytestring) -> float:
     [flt] = struct.unpack('f', bytestring)
     return flt
 
 
+@dataclass
+class SobekResults:
+    """
+    Dataclass for containing data read from Sobek .his-files.
+    """
+    timestamps: list[datetime.datetime]
+    data: dict[str, list[float]]
+
+    def write_to_excel(
+            self,
+            path: str | Path,
+            sheet_name: str,
+            overwrite: bool
+    ) -> None:
+        """
+        Writes the data in this class to an excelfile. The first column contains the timestamps, the following columns
+        the data for every id.
+
+        Args:
+            path (str or pathlib.Path): path Excelfile
+            sheet_name (str): name of the sheet to write to
+            overwrite (bool): if true: removes the sheet with the given name if it already exists
+
+        Returns:
+            None
+
+        Raises:
+            TODO
+        """
+
+        if isinstance(path, str):
+            path = Path(path)
+
+        # Validate; path:
+        if not path.parent.exists():
+            raise ValueError(f'Directory does not exist ({path.parent.resolve()})')
+        # Validate; length sheetname:
+        if len(sheet_name) > 31:  # Excel's limit
+            raise ValueError("Sheet name cannot exceed 31 characters")
+        # Validate; check if sheet can accommodate all IDs (plus timestamp column):
+        if len(self.data) + 1 >= MAX_COLUMNS_EXCEL:
+            raise ValueError(f'Too many IDs ({len(self.data)}) to fit in Excel sheet (max columns: {MAX_COLUMNS_EXCEL})')
+        # Validate; number of rows (accounting for header row):
+        if len(self.timestamps) + DATA_START_ROW_EXCEL - 1 > MAX_ROWS_EXCEL:
+            raise ValueError(
+                f'Too many timestamps ({len(self.timestamps)}) to fit in Excel sheet. '
+                f'Maximum allowed: {MAX_ROWS_EXCEL - DATA_START_ROW_EXCEL + 1}'
+            )
+
+        if path.exists():
+            # Load existing workbook:
+            wb = load_workbook(path)
+        else:
+            # Create new workbook:
+            wb = Workbook()
+            # Remove default sheet:
+            default_sheet = wb.active
+            wb.remove(default_sheet)
+
+        if sheet_name in wb.sheetnames:
+            if overwrite:
+                # Remove existing sheet:
+                del wb[sheet_name]
+            else:
+                raise PermissionError(f'Cannot write results to excelfile: sheet "{sheet_name}" allready exists and "overwrite" = {overwrite}. ')
+        ws = wb.create_sheet(sheet_name)
+
+        # Write timestamps in first column:
+        ws.cell(row=1, column=1, value='Timestamp')  # header
+        for row, timestamp in enumerate(self.timestamps, start=DATA_START_ROW_EXCEL):
+            ws.cell(row=row, column=1, value=timestamp)
+
+        # Write data to columns:
+        for col, (id_, values) in enumerate(self.data.items(), start=DATA_START_ROW_EXCEL):
+            # Write header (Sobek id):
+            ws.cell(row=1, column=col, value=id_)
+            # Write values:
+            for row, value in enumerate(values, start=DATA_START_ROW_EXCEL):
+                ws.cell(row=row, column=col, value=value)
+
+        # Save the workbook:
+        wb.save(path)
+
+
 class SobekDataFetcher:
     """
-    Class for reading Sobek data from his files.
+    Class for reading Sobek results from his files.
     """
 
     def __init__(
@@ -104,12 +195,12 @@ class SobekDataFetcher:
         self.timestamps = self._get_timestamps_list_datetime()
         self.timestep_data_sec = self._get_timestep_data_sec()
 
-        if report: self.print_overview()
+        if report: self.print_overview_of_hisfile()
 
     def __str__(self):
 
         report = "\n----------------------------------------------------------------------------------------------------\n" + \
-                 " Overview Sobek data fetcher / his file\n" + \
+                 " Overview his file (file containing Sobek results)\n" + \
                  "----------------------------------------------------------------------------------------------------\n" + \
                  f"         Sobek Project: {self.project}\n" + \
                  f"                  Case: {self.case}\n" + \
@@ -120,7 +211,7 @@ class SobekDataFetcher:
                  f"        Last timestamp: {self.timestamps[-1]}\n" + \
                  "\n" + \
                  f"  Timestep calculation: {self.timestep_computation_sec} sec\n" + \
-                 f"         Timestep data: {self.timestep_data_sec} sec\n" + \
+                 f"         Timestep results: {self.timestep_data_sec} sec\n" + \
                  "\n" + \
                  f"   Number of locations: {self.id_count}\n" + \
                  self._get_parameter_report_str()
@@ -183,7 +274,7 @@ class SobekDataFetcher:
             first_thousend_characters = hisfile.read(2000).decode('latin-1', errors='ignore')
         print(first_thousend_characters)
 
-    def print_overview(self):
+    def print_overview_of_hisfile(self):
         print(self.__str__())
 
     def _get_id_count(self):
@@ -320,7 +411,7 @@ class SobekDataFetcher:
             ids_sobek: list[str],
             index_start: int = 0,
             index_end: Optional[int] = None
-    ):
+    ) -> SobekResults:
         """
         :param index_parameter_sobek_data:
             Integer, zero based. A Sobek HIS-files can contain different parameters. To get an overview of the
@@ -331,11 +422,10 @@ class SobekDataFetcher:
             Optional. Integer. To get an overview of the available timesteps use "print_overview(self)"
         :param index_end:
             Optional. Integer. To get an overview of the available timesteps use "print_overview(self)"
-        :return: {'timestamps':[datetime.datetime()..], 'data':{'id1':[float, ..], 'id2'[float, ..], ..}}.
+        :return: {'timestamps':[datetime.datetime()..], 'results':{'id1':[float, ..], 'id2'[float, ..], ..}}.
         """
 
-        data_sobek_to_return = {'timestamps':None, 'data':{}}
-
+        # Validation:
         ids_not_in_his_file = []
         for id_sobek_node in ids_sobek:
             if id_sobek_node not in self.ids_dict: ids_not_in_his_file.append(id_sobek_node)
@@ -358,20 +448,23 @@ class SobekDataFetcher:
             message = "'index_end' must be larger than 'index_start'. "
             raise Exception(message)
 
-        # read data from Sobek his file and add to result:
+        # Read data from Sobek his file:
+        data = {}
         pos_start_data = LEN_HEADER + LEN_N_PAR_N_ID + LEN_STR_PAR * self.parameter_count + LEN_ID * self.id_count + index_parameter_sobek_data * LEN_VALUE  # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
         with open(self.path_hisfile, 'rb') as hisfile:
             for id_sobek_node in ids_sobek:
                 lst_data_values_for_sobek_id = []
                 id_index = self.ids_dict[id_sobek_node]
-                for index_timestep in range(index_start, index_end):
+                for index_timestep in range(index_start, index_end + 1):
                     pos =((index_timestep * (self.id_count * self.parameter_count + 1)) + 1 + id_index * self.parameter_count) * LEN_VALUE
                     hisfile.seek(pos_start_data + pos)
                     data_value = _convert_bytestring_to_float(hisfile.read(LEN_VALUE))
                     lst_data_values_for_sobek_id.append(data_value)
-                data_sobek_to_return['data'][id_sobek_node] = lst_data_values_for_sobek_id
+                data[id_sobek_node] = lst_data_values_for_sobek_id
 
-        # add timestamps to result:
-        data_sobek_to_return['timestamps'] = self.timestamps
+        results = SobekResults(
+            timestamps=self.timestamps,
+            data=data
+        )
 
-        return data_sobek_to_return
+        return results

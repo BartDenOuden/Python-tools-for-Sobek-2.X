@@ -9,10 +9,23 @@ sbk_fetcher = SobekDataFetcher(
 )
 
 ids = sbk_fetcher.get_ids_list()
-print(sbk_fetcher.get_ids_list())
-parameter = 0
+print('ids:', sbk_fetcher.get_ids_list())
 
-data = sbk_fetcher.get_data(index_parameter_sobek_data=parameter,
-                            ids_sobek=[ids[0], ids[1]]
-                            )
-print(f"\nnode: {ids[0]}\nmaximum '{sbk_fetcher.get_parameters()[parameter]}': {max(data['data'][ids[0]]):.3f} m NAP")
+parameter = 0
+id_1 = ids[0]
+id_2 = ids[1]
+ids = [id_1, id_2]
+results = sbk_fetcher.get_data(
+    index_parameter_sobek_data=parameter,
+    ids_sobek=ids
+)
+
+print('\nData gelezen uit hisfile:')
+for id_ in ids:
+    print(f"    node: {id_} | maximum waterpeil: {max(results.data[id_]):.3f} m NAP")
+
+results.write_to_excel(
+    path='n:/tmp/sbk_datafetcher_result.xlsx',
+    sheet_name='Case 1',
+    overwrite=True
+)

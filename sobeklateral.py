@@ -1,10 +1,10 @@
 """
-This module contains functions to generate Sobek timeseries for lateral discharges from data in an Excel file.
+This module contains functions to generate Sobek timeseries for lateral discharges from results in an Excel file.
 Sobek is a program for making models of water systems.
 
 REQUIRED FORMAT DATA IN SPREADSHEET
 - date en time in first column as Excel date-type
-- first row: header or first row of data (choose "headers = True"/ "headers = False" accordingly)
+- first row: header or first row of results (choose "headers = True"/ "headers = False" accordingly)
 
 Run as file: fill out variables in this module under " VARIABLES...".
 
@@ -98,7 +98,7 @@ def return_str_sobek_lateral_q_timeseries_from_excel(node_id,
 
     REQUIRED FORMAT DATA IN SPREADSHEET
     - date en time in first column as Excel date-type
-    - first row: header or first row of data (choose "headers=True"/ "headers=False" accordingly)
+    - first row: header or first row of results (choose "headers=True"/ "headers=False" accordingly)
 
     Arguments:
         column_values: Number of the column containing Q or H values in the Excel sheet.
@@ -135,11 +135,11 @@ def return_str_sobek_lateral_q_timeseries_from_lists(node_id,
 def add_or_replace_timeseries_lateral_file(path_lat_file, str_sobek_lateral_q_timeseries):
     """Adds a time series to a BOUNDARY.DAT file, or replaces it if a boundary for the node already exists."""
 
-    # Get part containing Sobek node id from string (data) that has to be added to BOUNDARY.DAT:
+    # Get part containing Sobek node id from string (results) that has to be added to BOUNDARY.DAT:
     pattern = r"(FLNO id '[^']*')"
     first_part_replace_pattern = re.match(pattern, str_sobek_lateral_q_timeseries).group()
 
-    # New pattern for removing existing (if any) boundary data for Sobek node id in BOUNDARY.DAT:
+    # New pattern for removing existing (if any) boundary results for Sobek node id in BOUNDARY.DAT:
     # (Operators are 'greedy'; they take as much text as possible. The ? after an operator makes it 'non-greedy'.)
     pattern = first_part_replace_pattern + r".*?flno\n"
 

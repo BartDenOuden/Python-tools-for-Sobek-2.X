@@ -1,4 +1,4 @@
-"""This module contains a class to make graphs showing Sobek data.
+"""This module contains a class to make graphs showing Sobek results.
 Bart den Ouden, october 2019, april 2020
 bart@bartdenoudenwateradvies.nl"""
 
@@ -242,7 +242,7 @@ class SobekGraph:
         :param list_str_ids_sobek_to_get_data_from:
             List of ids of Sobekmodel elements (nodes, reaches, reachsegments). Example: []
         :param list_str_labels_legend:
-            Optional. Number of strings must be equal to number of ids Sobek to get data from.
+            Optional. Number of strings must be equal to number of ids Sobek to get results from.
             When this param is not given param "list_str_ids_sobek_to_get_data_from" will be used for legend labels.
         :param index_start:
             Optional. Integer.
@@ -260,8 +260,8 @@ class SobekGraph:
 
         # Convert dates, so they are easier to layout:
         lst_dates = self._convert_lst_datetime_to_dates(sbkdata['timestamps'])
-        # plot (add) data:
-        for id, data in sbkdata['data'].items():
+        # plot (add) results:
+        for id, data in sbkdata['results'].items():
             self.figure.axes[0].plot_date(lst_dates, data, marker=None, linestyle='solid')
             if not list_str_labels_legend:
                 self.labels_legend.append(id)
@@ -282,7 +282,7 @@ class SobekGraph:
             Date and time in first column; the format must be excel date.
             A header is required, and must be the first row of the sheet only.
         :param str_path_xl_file:
-            Path of the excel file. Example: "C:\\data\\river.xls"".
+            Path of the excel file. Example: "C:\\results\\river.xls"".
         :param str_sheet_name:
             Name of the sheet name. Example: "measure point 13".
         :param index_column_data:
@@ -291,7 +291,7 @@ class SobekGraph:
             Zero indexed.
         :param index_end:
             Zero indexed.
-            Given row is not included in data shown in graph.
+            Given row is not included in results shown in graph.
         :param str_label_legend:
             Optional.
             When this param is not given param "list_str_ids_sobek_to_get_data_from" will be used for legend labels.
@@ -338,4 +338,4 @@ class SobekGraph:
         self._apply_settings_to_graph()
         self.figure.savefig(path, dpi=dpi)
 
-    # TODO: change unit y-axis, for example meter to milimeter. Actual data stays the same; just the ticklabels change.
+    # TODO: change unit y-axis, for example meter to milimeter. Actual results stays the same; just the ticklabels change.
