@@ -3,10 +3,12 @@
 Bart den Ouden Wateradvies,
 4 january 2014
 8 juni 2019: omgezet naar Python 3, verbeterd en uitgebreid
-januari 2025: refactoring, verbeteringen"""
+januari 2025: refactoring, verbeteringen
+"""
 
 import datetime
 import os
+from pathlib import Path
 import re
 import struct
 import sys
@@ -22,6 +24,27 @@ import resultsat
 # 5. tijdstap en berekeningsresultaten, integer 4 bytes aantal tijdstappen, floats 4 bytes, gegroepeerd per locaties (node1par1, node1par2, node1par3, node2par1, node2par2, node2par3, ...)
 
 
+NM_CASELIST = 'CASELIST.CMT'
+
+MAXBYTES = 20_000_000    # maximum number of bytes that is read form HIS file at once
+
+POS_N_PAR = 160
+POS_N_ID = 164
+POS_STR_PAR = 168
+POS_STR_DATE = 124
+POS_STR_TIME = 135
+
+# lengtes van delen van een HIS-file voor het instellen van het leespunt van het bestand
+LEN_HEADER = 160
+LEN_N_PAR_N_ID = 8
+LEN_STR_PAR = 20
+LEN_ID = 24
+LEN_VALUE = 4
+LEN_STR_DATE = 10
+LEN_STR_TIME = 8
+LEN_STR_DATE_TIME_TIMESTEP = 36
+
+
 def _convert_bytestring_to_float(bytestring):
     [flt] = struct.unpack('f', bytestring)
     return flt
@@ -32,30 +55,10 @@ class SobekDataFetcher:
     Class for reading Sobek data from his files.
     """
 
-    NM_CASELIST = 'CASELIST.CMT'
-
-    MAXBYTES = 20000000    # maximum number of bytes that is read form HIS file at once
-
-    POS_N_PAR = 160
-    POS_N_ID = 164
-    POS_STR_PAR = 168
-    POS_STR_DATE = 124
-    POS_STR_TIME = 135
-
-    # lengtes van delen van een HIS-file voor het instellen van het leespunt van het bestand
-    LEN_HEADER = 160
-    LEN_N_PAR_N_ID = 8
-    LEN_STR_PAR = 20
-    LEN_ID = 24
-    LEN_VALUE = 4
-    LEN_STR_DATE = 10
-    LEN_STR_TIME = 8
-    LEN_STR_DATE_TIME_TIMESTEP = 36
-
     def __init__(
             self,
             dir_sobek: str,
-            lit: str,
+            project: str,
             case: str,
             name_hisfile: str,
             report: bool = True
@@ -63,7 +66,7 @@ class SobekDataFetcher:
         """
         :param dir_sobek:
             path of the Sobek dir. Example: "C:\\Sobek213\\"".
-        :param lit:
+        :param project:
             name of the directory of the Sobek project. Example: "Rijn.lit".
         :param case:
             name of the Sobek case. Example: "case 13: BB=23, weir 3 raised"
@@ -71,8 +74,8 @@ class SobekDataFetcher:
             name of the Sobek HIS-file. Example: 'CALCPNT.HIS'. The module resultsat.py contains constants for
             convenience.
         """
-        self.dir_sobek = dir_sobek
-        self.lit = lit
+        self.dir_sobek = Path(dir_sobek)
+        self.project = project
         self.case = case
         self.name_hisfile = name_hisfile
 
@@ -84,7 +87,7 @@ class SobekDataFetcher:
         report = "\n----------------------------------------------------------------------------------------------------\n" + \
                  " Overview Sobek data fetcher / his file\n" + \
                  "----------------------------------------------------------------------------------------------------\n" + \
-                 f"         Sobek Project: {self.lit}\n" + \
+                 f"         Sobek Project: {self.project}\n" + \
                  f"                  Case: {self.case}\n" + \
                  f"            Results at: {self._get_results_at_str()} ({self.name_hisfile})\n" + \
                  "\n" + \
@@ -123,70 +126,61 @@ class SobekDataFetcher:
 
         return report
 
-    def _get_path_his_file(self):
-        path_caselist = os.path.join(self.dir_sobek, self.lit, self.NM_CASELIST)
+    def _get_path_his_file(self) -> Path:
+        path_caselist = self.dir_sobek / self.project / NM_CASELIST
         with open(path_caselist) as caselist:
             str_caselist = caselist.read()
-            pattern = r"([0-9]*) '(.*)'"
-            match = re.findall(pattern, str_caselist)
-            case_dict = {case_name: case_dir for case_dir, case_name in match}
-            case_dir = case_dict[self.case]
-            return os.path.join(self.dir_sobek, self.lit, case_dir, self.name_hisfile)
 
-    def _get_his_file(self):
-        """ returns a file object to the HIS file """
-        path = self._get_path_his_file()
-        try:
-            return open(path, 'rb')                 #Attention! 'b' signifies reading 'binary'; 'newlines' will be ignored.
-        except IOError:
-            raise Exception('\nCould not find or open his file: ' + path + '\n')
+        pattern = r"([0-9]*) '(.*)'"
+        match = re.findall(pattern, str_caselist)
+        case_dict = {case_name: case_dir for case_dir, case_name in match}
+        case_dir = case_dict[self.case]
+
+        return self.dir_sobek / self.project / case_dir / self.name_hisfile
 
     def _print_header_his_file(self):
-        hisfile = self._get_his_file()
-        hisfile.seek(0)                  # stelt leespositie in op punt waar een integer van 4 bytes staat
-        first_thousend_characters = hisfile.read(2000).decode('latin-1', errors='ignore')
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(0)  # stelt leespositie in
+            first_thousend_characters = hisfile.read(2000).decode('latin-1', errors='ignore')
         print(first_thousend_characters)
-        hisfile.close()
 
     def print_overview(self):
         print(self.__str__())
 
     def count_ids(self):
-        hisfile = self._get_his_file()
-        hisfile.seek(self.POS_N_ID)                  # stelt leespositie in op punt waar een integer van 4 bytes staat
-        nr_ids = int.from_bytes(hisfile.read(4), byteorder=sys.byteorder)
-        hisfile.close()
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(POS_N_ID)                  # stelt leespositie in op punt waar een integer van 4 bytes staat
+            nr_ids = int.from_bytes(hisfile.read(4), byteorder=sys.byteorder)
         return nr_ids
 
     def count_par(self):
-        hisfile = self._get_his_file()
-        hisfile.seek(self.POS_N_PAR)
-        nr_par = int.from_bytes(hisfile.read(4), byteorder=sys.byteorder)
-        hisfile.close()
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(POS_N_PAR)
+            nr_par = int.from_bytes(hisfile.read(4), byteorder=sys.byteorder)
         return nr_par
 
     def count_timestamps(self):
         n_ids = self.count_ids()
         n_par = self.count_par()
 
-        hisfile = self._get_his_file()
-        hisfile.seek(0, os.SEEK_END)
-        size_timesteps = int(hisfile.tell())         #aantal bytes in bestand
-        size_timesteps = size_timesteps - (self.LEN_HEADER + self.LEN_N_PAR_N_ID + self.LEN_STR_PAR * n_par + self.LEN_ID * n_ids) # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
-        size_timestep = n_par * n_ids * 4 + 4          #aantal bytes per tijdstap = aantal parameters * aantal Ids (nodes) * 4 bytes + tijd (4 bytes)
-        hisfile.close()
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(0, os.SEEK_END)
+            size_timesteps = int(hisfile.tell())         #aantal bytes in bestand
+            size_timesteps = size_timesteps - (LEN_HEADER + LEN_N_PAR_N_ID + LEN_STR_PAR * n_par + LEN_ID * n_ids) # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
+            size_timestep = n_par * n_ids * 4 + 4          #aantal bytes per tijdstap = aantal parameters * aantal Ids (nodes) * 4 bytes + tijd (4 bytes)
 
         return size_timesteps // size_timestep         #aantal tijdstappen
         
     def get_t0_datetime(self):
         """ returns a time and date object containing the start date and time of the HIS file """
-        hisfile = self._get_his_file()
-        hisfile.seek(self.POS_STR_DATE)
-        str_date = hisfile.read(self.LEN_STR_DATE).decode("latin-1")
-        lst_date = str_date.split(sep=".")
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(POS_STR_DATE)
+            str_date = hisfile.read(LEN_STR_DATE).decode("latin-1")
 
-        hisfile.seek(self.POS_STR_TIME)
-        str_time = hisfile.read(self.LEN_STR_TIME).decode("latin-1")
+            hisfile.seek(POS_STR_TIME)
+            str_time = hisfile.read(LEN_STR_TIME).decode("latin-1")
+
+        lst_date = str_date.split(sep=".")
         lst_time = str_time.split(sep=':')
 
         start_date_and_time = datetime.datetime(
@@ -197,17 +191,17 @@ class SobekDataFetcher:
             int(lst_time[1]),
             int(lst_time[2])
         )
-        hisfile.close()
 
         return start_date_and_time
 
     def get_timestep_computation_sec(self):
-        hisfile = self._get_his_file()
-        hisfile.seek(self.POS_STR_DATE)
-        str_date = hisfile.read(self.LEN_STR_DATE_TIME_TIMESTEP).decode("latin-1")
+
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(POS_STR_DATE)
+            str_date = hisfile.read(LEN_STR_DATE_TIME_TIMESTEP).decode("latin-1")
+
         pattern = r"([0-9]+)s\)"
         timestep = int(re.findall(pattern, str_date)[0])
-        hisfile.close()
 
         return timestep
 
@@ -220,28 +214,26 @@ class SobekDataFetcher:
             return -999
 
     def get_timestamps_list_datetime(self):
+
         n_ids = self.count_ids()
         n_par = self.count_par()
         t0 = self.get_t0_datetime()  # = time and date object
         timestep_sec = self.get_timestep_computation_sec()
         n_timesteps = self.count_timestamps()
 
-        hisfile = self._get_his_file()
-
-        pos_start_data = self.LEN_HEADER + self.LEN_N_PAR_N_ID + self.LEN_STR_PAR * n_par + self.LEN_ID * n_ids  # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
-        bytes_per_timestep = n_ids * n_par * self.LEN_VALUE + self.LEN_VALUE
-        lst_timestamps = []
+        pos_start_data = LEN_HEADER + LEN_N_PAR_N_ID + LEN_STR_PAR * n_par + LEN_ID * n_ids  # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
+        bytes_per_timestep = n_ids * n_par * LEN_VALUE + LEN_VALUE
 
         # read timesteps from HIS file and write to list
-        for timestep_int in range(n_timesteps):
-            pos = pos_start_data + timestep_int * bytes_per_timestep
-            hisfile.seek(pos)
-            nr_of_timesteps = int.from_bytes(hisfile.read(4), byteorder='little')
-            seconds = nr_of_timesteps * timestep_sec
-            timestamp = t0 + datetime.timedelta(seconds=seconds)
-            lst_timestamps.append(timestamp)
-
-        hisfile.close()
+        lst_timestamps = []
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            for timestep_int in range(n_timesteps):
+                pos = pos_start_data + timestep_int * bytes_per_timestep
+                hisfile.seek(pos)
+                nr_of_timesteps = int.from_bytes(hisfile.read(4), byteorder='little')
+                seconds = nr_of_timesteps * timestep_sec
+                timestamp = t0 + datetime.timedelta(seconds=seconds)
+                lst_timestamps.append(timestamp)
 
         return lst_timestamps
 
@@ -250,46 +242,39 @@ class SobekDataFetcher:
         dict_timestamps = {date: index for index, date in enumerate(lst_timestamps)}
         return dict_timestamps
 
-    def get_ids_list(self):
+    def _get_ids(self) -> bytes:
+
         n_ids = self.count_ids()
         n_par = self.count_par()
 
-        # read string from HIS-file with all id's
-        his_file = self._get_his_file()
-
-        pos = self.LEN_HEADER + self.LEN_N_PAR_N_ID + self.LEN_STR_PAR * n_par
+        pos = LEN_HEADER + LEN_N_PAR_N_ID + LEN_STR_PAR * n_par
         length = n_ids * 24
-        his_file.seek(pos)
-        bytes_ids = his_file.read(length)            # reeks van Ids; 4 bytes integer gevolgd door string van 20 tekens
-        his_file.close()
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(pos)
+            bytes_ids = hisfile.read(length)  # reeks van Ids; 4 bytes integer gevolgd door string van 20 tekens
+        return bytes_ids
+
+    def get_ids_list(self) -> list[str]:
+
+        n_ids = self.count_ids()
+        bytes_ids = self._get_ids()
+
         # read id's from string and write them to list (leaves out the 4 byte integers!)
         lst_str_ids = []
         for i in range(n_ids):
             lst_str_ids.append(bytes_ids[i * 24 + 4 : i * 24 + 24].rstrip().decode("latin-1"))
 
-        his_file.close()
-
         return lst_str_ids
 
-    def get_ids_dict(self):
+    def get_ids_dict(self) -> dict[str, int] :
         n_ids = self.count_ids()
-        n_par = self.count_par()
+        bytes_ids = self._get_ids()
 
-        # read string from HIS-file with all id's
-        his_file = self._get_his_file()
-
-        pos = self.LEN_HEADER + self.LEN_N_PAR_N_ID + self.LEN_STR_PAR * n_par
-        length = n_ids * 24
-        his_file.seek(pos)
-        bytes_ids = his_file.read(length)  # reeks van Ids; 4 bytes integer gevolgd door string van 20 tekens
-        his_file.close()
         # read id's from string and write them to list (leaves out the 4 byte integers!)
         lst_str_ids = []
         for i in range(n_ids):
             lst_str_ids.append(bytes_ids[i * 24 + 4: i * 24 + 24].rstrip().decode("latin-1"))
-        dict_ids = {id:index for index, id in enumerate(lst_str_ids)}
-
-        his_file.close()
+        dict_ids = {id_:index for index, id_ in enumerate(lst_str_ids)}
 
         return dict_ids
 
@@ -299,16 +284,13 @@ class SobekDataFetcher:
     def get_parameters_list_str(self):
         n_par =  self.count_par()
 
-        his_file = self._get_his_file()
-        his_file.seek(self.POS_STR_PAR)
-        list_par = []
-        for i in range(n_par):
-            list_par.append(his_file.read(self.LEN_STR_PAR).decode('latin-1'))
-
-        his_file.close()
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            hisfile.seek(POS_STR_PAR)
+            list_par = []
+            for i in range(n_par):
+                list_par.append(hisfile.read(LEN_STR_PAR).decode('latin-1'))
 
         return list_par
-
 
     def get_data(
             self,
@@ -339,8 +321,8 @@ class SobekDataFetcher:
             if id_sobek_node not in ids_dict: ids_not_in_his_file.append(id_sobek_node)
         if len(ids_not_in_his_file) > 0:
             message = ''
-            for id in ids_not_in_his_file:
-                message = message + id + ', '
+            for id_ in ids_not_in_his_file:
+                message = message + id_ + ', '
             message = "Id's not existing in HIS file: " + message
             raise Exception(message)
 
@@ -361,20 +343,17 @@ class SobekDataFetcher:
             raise Exception(message)
 
         # read data from Sobek his file and add to result:
-        hisfile = self._get_his_file()
-
-        pos_start_data = self.LEN_HEADER + self.LEN_N_PAR_N_ID + self.LEN_STR_PAR * n_par + self.LEN_ID * n_ids  + index_parameter_sobek_data * self.LEN_VALUE  # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
-        for id_sobek_node in ids_sobek:
-            lst_data_values_for_sobek_id = []
-            id_index = ids_dict[id_sobek_node]
-            for index_timestep in range(index_start, index_end):
-                pos =((index_timestep * (n_ids * n_par + 1)) + 1 + id_index * n_par) * self.LEN_VALUE
-                hisfile.seek(pos_start_data + pos)
-                data_value = _convert_bytestring_to_float(hisfile.read(self.LEN_VALUE))
-                lst_data_values_for_sobek_id.append(data_value)
-            data_sobek_to_return['data'][id_sobek_node] = lst_data_values_for_sobek_id
-
-        hisfile.close()
+        pos_start_data = LEN_HEADER + LEN_N_PAR_N_ID + LEN_STR_PAR * n_par + LEN_ID * n_ids + index_parameter_sobek_data * LEN_VALUE  # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
+        with open(self._get_path_his_file(), 'rb') as hisfile:
+            for id_sobek_node in ids_sobek:
+                lst_data_values_for_sobek_id = []
+                id_index = ids_dict[id_sobek_node]
+                for index_timestep in range(index_start, index_end):
+                    pos =((index_timestep * (n_ids * n_par + 1)) + 1 + id_index * n_par) * LEN_VALUE
+                    hisfile.seek(pos_start_data + pos)
+                    data_value = _convert_bytestring_to_float(hisfile.read(LEN_VALUE))
+                    lst_data_values_for_sobek_id.append(data_value)
+                data_sobek_to_return['data'][id_sobek_node] = lst_data_values_for_sobek_id
 
         # add timestamps to result:
         timestamps = self.get_timestamps_list_datetime()[index_start:index_end]

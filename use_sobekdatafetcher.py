@@ -3,7 +3,7 @@ import resultsat
 
 sbk_fetcher = SobekDataFetcher(
     dir_sobek='data_for_examples\\',
-    lit='PyTls.lit',
+    project='PyTls.lit',
     case='Case 1 of dummy model for examples Python tools',
     name_hisfile=resultsat.RESULTS_AT_NODES
 )
