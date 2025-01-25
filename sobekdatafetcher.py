@@ -188,6 +188,7 @@ class SobekDataFetcher:
         self.parameter_count = self._get_parameter_count()
         self.timestamp_count = self._count_timestamps()
 
+        self.ids = self._get_ids_list()
         self.ids_dict = self._get_ids_dict()
 
         self.t0 = self._get_t0_datetime()
@@ -362,7 +363,7 @@ class SobekDataFetcher:
         dict_timestamps = {date: index for index, date in enumerate(self.timestamps)}
         return dict_timestamps
 
-    def _get_ids(self) -> bytes:
+    def _get_ids_as_bytes(self) -> bytes:
 
         pos = LEN_HEADER + LEN_N_PAR_N_ID + LEN_STR_PAR * self.parameter_count
         length = self.id_count * LEN_ID
@@ -371,8 +372,8 @@ class SobekDataFetcher:
             bytes_ids = hisfile.read(length)  # reeks van Ids; 4 bytes integer gevolgd door string van 20 tekens
         return bytes_ids
 
-    def get_ids_list(self) -> list[str]:
-        bytes_ids = self._get_ids()
+    def _get_ids_list(self) -> list[str]:
+        bytes_ids = self._get_ids_as_bytes()
 
         # read id's from string and write them to list (leaves out the 4 byte integers!)
         lst_str_ids = []
@@ -382,7 +383,7 @@ class SobekDataFetcher:
         return lst_str_ids
 
     def _get_ids_dict(self) -> dict[str, int] :
-        bytes_ids = self._get_ids()
+        bytes_ids = self._get_ids_as_bytes()
 
         # read id's from string and write them to list (leaves out the 4 byte integers!)
         lst_str_ids = []
@@ -408,27 +409,51 @@ class SobekDataFetcher:
     def get_data(
             self,
             index_parameter_sobek_data: int,
-            ids_sobek: list[str],
-            index_start: int = 0,
-            index_end: Optional[int] = None
+            ids_sobek: Optional[list[str]] = None,
+            start: Optional[int | datetime.datetime] = None,
+            end: Optional[int | datetime.datetime] = None
     ) -> SobekResults:
         """
-        :param index_parameter_sobek_data:
-            Integer, zero based. A Sobek HIS-files can contain different parameters. To get an overview of the
-            available parameters and corresponding indexes, use "print_parameters(self)"
-        :param ids_sobek:
-            List of ids of Sobekmodel elements (nodes, reaches, reachsegments). Example: []
-        :param index_start:
-            Optional. Integer. To get an overview of the available timesteps use "print_overview(self)"
-        :param index_end:
-            Optional. Integer. To get an overview of the available timesteps use "print_overview(self)"
-        :return: {'timestamps':[datetime.datetime()..], 'results':{'id1':[float, ..], 'id2'[float, ..], ..}}.
+        Retrieves data from the Sobek HIS file for the specified parameter, IDs, and time range.
+
+        Only the parameter index_parameter_sobek_data is mandatory; when parameter values are ommited the
+        maximum amount of data is returned.
+
+        Args:
+            index_parameter_sobek_data (int):
+                Index of the parameter to retrieve from the Sobek data.
+                Use print_parameters() for a description of the parameters present in the .his-file and their indices.
+            ids_sobek (Optional[list[str]], optional):
+                List of Sobek IDs to retrieve data for.
+                Defaults to None. If None, retrieves data for all IDs in the .his-file.
+            start (Optional[int | datetime.datetime], optional):
+                End of the timeperiod to be retrieved.
+                Can be either an index or a datetime object.
+                Defaults to None. If None, start is the first timestamp in the .his-file.
+            end (Optional[int | datetime.datetime], optional):
+                End of the timeperiod to be retrieved. This end timestamp is INCLUDED in the results.
+                Can be either an index or a datetime object.
+                Defaults to None. If None, ends at the last timestamp in the .his-file.
+
+        Returns:
+            SobekResults: A dataclass containing:
+                - timestamps: List of datetime objects for the retrieved period
+                - data: Dictionary mapping Sobek IDs to lists of float values
+
+        Raises:
+            ValueError: If any specified IDs don't exist in the HIS file
+            ValueError: If start or end index exceeds the number of timesteps
+            ValueError: If end index is not larger than start index
+            ValueError: If provided datetime for start/end doesn't match any timestamp
+            TypeError: If start/end arguments are neither datetime nor int
         """
 
-        # Validation:
+        # Determine ids_sobek:
+        if ids_sobek is None: ids_sobek = self.ids
+        # Validation ids_sobek:
         ids_not_in_his_file = []
-        for id_sobek_node in ids_sobek:
-            if id_sobek_node not in self.ids_dict: ids_not_in_his_file.append(id_sobek_node)
+        for id_ in ids_sobek:
+            if id_ not in self.ids_dict: ids_not_in_his_file.append(id_)
         if len(ids_not_in_his_file) > 0:
             message = ''
             for id_ in ids_not_in_his_file:
@@ -436,34 +461,56 @@ class SobekDataFetcher:
             message = "Id's not existing in HIS file: " + message
             raise Exception(message)
 
-        if not index_end: index_end = self.timestamp_count - 1
+        # Determine index_start:
+        if start is None:
+            index_start = 0
+        elif isinstance(start, datetime.datetime):
+            try:
+                index_start = self.timestamps.index(start)
+            except ValueError:
+                raise ValueError(f'Given start {start} is not present in timestamps hisfile. ')
+        elif isinstance(start, int):
+            index_start = start
+        else:
+            raise TypeError(f'Value for parameter start must be datetime.datetime or int. Given: {type(start)}')
 
+        # Determine index_end:
+        if end is None:
+            index_end = self.timestamp_count - 1
+        elif isinstance(end, datetime.datetime):
+            try:
+                index_end = self.timestamps.index(end)
+            except ValueError:
+                raise ValueError(f'Given end {end} is not present in timestamps hisfile. ')
+        elif isinstance(end, int):
+            index_end = end
+        else:
+            raise TypeError(f'Value for parameter end must be datetime.datetime or int. Given: {type(end)}')
+
+        # Validate index_start and index_end:
         if index_start > self.timestamp_count - 1:
-            message = "Given index_start exceeds number of timesteps in his file. "
-            raise Exception(message)
+            raise ValueError(f"Given index_start ({index_start}) exceeds number of timesteps in his file ({self.timestamp_count}). ")
         if index_end > self.timestamp_count - 1:
-            message = "Given index_end exceeds number of timesteps in his file. "
-            raise Exception(message)
+            raise ValueError(f"Given index_end ({index_end}) exceeds number of timesteps in his file ({self.timestamp_count}). ")
         if index_end <= index_start:
-            message = "'index_end' must be larger than 'index_start'. "
-            raise Exception(message)
+            raise ValueError(f"'index_end' ({index_end}) must be larger than 'index_start' ({index_start}). ")
 
-        # Read data from Sobek his file:
+        # Read data from Sobek .his-file:
         data = {}
         pos_start_data = LEN_HEADER + LEN_N_PAR_N_ID + LEN_STR_PAR * self.parameter_count + LEN_ID * self.id_count + index_parameter_sobek_data * LEN_VALUE  # aantal bytes bestand minus bytes voor header en ids = bytes voor waarden parameters
         with open(self.path_hisfile, 'rb') as hisfile:
-            for id_sobek_node in ids_sobek:
+            for id_ in ids_sobek:
                 lst_data_values_for_sobek_id = []
-                id_index = self.ids_dict[id_sobek_node]
+                id_index = self.ids_dict[id_]
                 for index_timestep in range(index_start, index_end + 1):
                     pos =((index_timestep * (self.id_count * self.parameter_count + 1)) + 1 + id_index * self.parameter_count) * LEN_VALUE
                     hisfile.seek(pos_start_data + pos)
                     data_value = _convert_bytestring_to_float(hisfile.read(LEN_VALUE))
                     lst_data_values_for_sobek_id.append(data_value)
-                data[id_sobek_node] = lst_data_values_for_sobek_id
+                data[id_] = lst_data_values_for_sobek_id
 
         results = SobekResults(
-            timestamps=self.timestamps,
+            timestamps=self.timestamps[index_start: index_end + 1],
             data=data
         )
 

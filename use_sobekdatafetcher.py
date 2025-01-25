@@ -2,22 +2,28 @@ from sobekdatafetcher import SobekDataFetcher
 import resultsat
 
 sbk_fetcher = SobekDataFetcher(
-    dir_sobek='data_for_examples\\',
+    dir_sobek='data_for_examples/',
     project='PyTls.lit',
     case='Case 1 of dummy model for examples Python tools',
     name_hisfile=resultsat.RESULTS_AT_NODES
 )
 
-ids = sbk_fetcher.get_ids_list()
-print('ids:', sbk_fetcher.get_ids_list())
+print('ids:', sbk_fetcher.ids)
 
 parameter = 0
-id_1 = ids[0]
-id_2 = ids[1]
+id_1 = sbk_fetcher.ids[0]
+id_2 = sbk_fetcher.ids[1]
 ids = [id_1, id_2]
+
+# results = sbk_fetcher.get_data(
+#     index_parameter_sobek_data=parameter,
+#     ids_sobek=ids
+# )
 results = sbk_fetcher.get_data(
     index_parameter_sobek_data=parameter,
-    ids_sobek=ids
+    # ids_sobek=ids,
+    # start=0,
+    # end=1,
 )
 
 print('\nData gelezen uit hisfile:')
