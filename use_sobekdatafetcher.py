@@ -15,4 +15,4 @@ parameter = 0
 data = sbk_fetcher.get_data(index_parameter_sobek_data=parameter,
                             ids_sobek=[ids[0], ids[1]]
                             )
-print(f"\nnode: {ids[0]}\nmaximum '{sbk_fetcher.get_parameters_list_str()[parameter]}': {max(data['data'][ids[0]]):.3f} m NAP")
+print(f"\nnode: {ids[0]}\nmaximum '{sbk_fetcher.get_parameters()[parameter]}': {max(data['data'][ids[0]]):.3f} m NAP")
