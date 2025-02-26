@@ -1,10 +1,10 @@
 """
-This module contains functions to generate Sobek timeseries for boundaries from results in an Excel file.
+This module contains functions to generate Sobek timeseries for boundaries from resultaten_laatste_tijdstap in an Excel file.
 Sobek is a program for making models of water systems.
 
 REQUIRED FORMAT DATA IN SPREADSHEET
 - date en time in first column as Excel date-type
-- first row: header or first row of results (choose "headers = True"/ "headers = False" accordingly)
+- first row: header or first row of resultaten_laatste_tijdstap (choose "headers = True"/ "headers = False" accordingly)
 
 Run as file: fill out variables in this module under " VARIABLES...".
 Use as module: use the function "return_sobek_boundary_timeseries()".
@@ -114,7 +114,7 @@ def return_str_sobek_boundary_timeseries_from_excel(node_id,
 
     REQUIRED FORMAT DATA IN SPREADSHEET
     - date en time in first column as Excel date-type
-    - first row: header or first row of results (choose "headers=True"/ "headers=False" accordingly)
+    - first row: header or first row of resultaten_laatste_tijdstap (choose "headers=True"/ "headers=False" accordingly)
 
     Arguments:
         column_values: Number of the column containing Q or H values in the Excel sheet.
@@ -153,11 +153,11 @@ def return_str_sobek_boundary_timeseries_from_lists(node_id,
 def add_or_replace_timeseries_bnd_file(path_bnd_file, str_sobek_boundary_timeseries):
     """Adds a time series to a BOUNDARY.DAT file, or replaces it if a boundary for the node already exists."""
 
-    # Get part containing Sobek node id from string (results) that has to be added to BOUNDARY.DAT:
+    # Get part containing Sobek node id from string (resultaten_laatste_tijdstap) that has to be added to BOUNDARY.DAT:
     pattern = r"(FLBO id '[^']*')"
     first_part_replace_pattern = re.match(pattern, str_sobek_boundary_timeseries).group()
 
-    # New pattern for removing existing (if any) boundary results for Sobek node id in BOUNDARY.DAT:
+    # New pattern for removing existing (if any) boundary resultaten_laatste_tijdstap for Sobek node id in BOUNDARY.DAT:
     # (Operators are 'greedy'; they take as much text as possible. The ? after an operator makes it 'non-greedy'.)
     pattern = first_part_replace_pattern + r".*?flbo\n"
 

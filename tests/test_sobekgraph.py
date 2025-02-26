@@ -18,7 +18,7 @@ class Test_Xaxis(TestCase):
                              str_sheet_name='long time series',
                              index_column_data=0,
                              index_start=None,
-                             str_label_legend='results Excel')
+                             str_label_legend='resultaten_laatste_tijdstap Excel')
         graph.x_axis._set_locators_and_formatters()
 
         self.assertIsInstance(graph.axes.xaxis.major.formatter, matplotlib.dates.DateFormatter)
@@ -240,7 +240,7 @@ class Test_Yaxis(TestCase):
         #                      str_sheet_name='scope is 10',
         #                      index_column_data=0,
         #                      index_start=None,
-        #                      str_label_legend='results Excel')
+        #                      str_label_legend='resultaten_laatste_tijdstap Excel')
 
         scope = 10
         height_axes_inch = 10 / 2.54  # Height = 10 cm
@@ -258,7 +258,7 @@ class Test_Yaxis(TestCase):
         #                      str_sheet_name='scope is 10',
         #                      index_column_data=0,
         #                      index_start=None,
-        #                      str_label_legend='results Excel')
+        #                      str_label_legend='resultaten_laatste_tijdstap Excel')
 
         scope = 5
         height_axes_inch = 10 / 2.54  # Height = 10 cm

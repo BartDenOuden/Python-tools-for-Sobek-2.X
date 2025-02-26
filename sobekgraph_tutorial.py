@@ -48,7 +48,7 @@ case_2 ='Case 2 of dummy model for examples Python tools'
 # 1. Make a SobekGraph-object:
 first_sbkgraph = sobekgraph.SobekGraph()
 
-# 2. Add results to this object:
+# 2. Add resultaten_laatste_tijdstap to this object:
 first_sbkgraph.add_sobek_data(str_sob_dir=sobek_dir,
                               str_lit=sobek_lit,
                               str_case=case_1,
@@ -67,9 +67,9 @@ first_sbkgraph.save_as_png_file("image_files/first_sbkgraph", dpi=150)
 # FEATURES OF SOBEKGRAPH
 # ------------------------
 
-# Sobekgraph uses the matplotlib library to make graphs of Sobek results.
+# Sobekgraph uses the matplotlib library to make graphs of Sobek resultaten_laatste_tijdstap.
 
-# - Easy viewing of Sobek results from different cases and results from Excel in one graph.
+# - Easy viewing of Sobek resultaten_laatste_tijdstap from different cases and resultaten_laatste_tijdstap from Excel in one graph.
 # - Smart scaling and formatting of axis labels (which can be configured in settings.py).
 
 
@@ -97,15 +97,15 @@ first_sbkgraph.save_as_png_file("image_files/first_sbkgraph", dpi=150)
 # MORE ABOUT ADDING DATA TO A GRAPH
 # ---------------------------------
 
-# At the moment (april 2020) two types of results can be added to the graph:
-# - Sobek results (results in His-files)
-# - Excel results (time series); The results must be a table with a one row header. The first column must be Excel dates.
+# At the moment (april 2020) two types of resultaten_laatste_tijdstap can be added to the graph:
+# - Sobek resultaten_laatste_tijdstap (resultaten_laatste_tijdstap in His-files)
+# - Excel resultaten_laatste_tijdstap (time series); The resultaten_laatste_tijdstap must be a table with a one row header. The first column must be Excel dates.
 
 # We make a new SobekGraph object and set the title:
 sbkgraph_1 = sobekgraph.SobekGraph(width_cm=14, height_cm=16)
-sbkgraph_1.title.set_title("Example adding results")
+sbkgraph_1.title.set_title("Example adding resultaten_laatste_tijdstap")
 
-# To get an overview of the Sobek results in an Hisfile you can use:
+# To get an overview of the Sobek resultaten_laatste_tijdstap in an Hisfile you can use:
 sbkgraph_1.print_info_about_sobek_data_file(str_sob_dir=sobek_dir,
                                             str_lit=sobek_lit,
                                             str_case=case_1,
@@ -115,8 +115,8 @@ sbkgraph_1.print_info_about_sobek_data_file(str_sob_dir=sobek_dir,
 # 0: discharge
 # 1: velocity
 
-# When you add Sobek results to a graph you have to let the method 'add_sobek_data()' know
-# the parameter of the Sobek His file, bij assigning it to 'index_parameter_sobek_data'.
+# When you add Sobek resultaten_laatste_tijdstap to a graph you have to let the method 'add_sobek_data()' know
+# the PARAMETER of the Sobek His file, bij assigning it to 'index_parameter_sobek_data'.
 
 # We add time series of discharges of two reach segments, '1_13' and '1_15', to the graph:
 sbkgraph_1.add_sobek_data(str_sob_dir=sobek_dir,
@@ -128,7 +128,7 @@ sbkgraph_1.add_sobek_data(str_sob_dir=sobek_dir,
                           list_str_labels_legend=['Case 1, rs 1_1', 'Case 1, rs 1_15']
                           )
 
-# We add Sobek results from another case:
+# We add Sobek resultaten_laatste_tijdstap from another case:
 sbkgraph_1.add_sobek_data(str_sob_dir=sobek_dir,
                           str_lit=sobek_lit,
                           str_case=case_2,
@@ -138,19 +138,19 @@ sbkgraph_1.add_sobek_data(str_sob_dir=sobek_dir,
                           list_str_labels_legend=['Case 2, rs 1_15']
                           )
 
-# And we add results from an Excel file:
+# And we add resultaten_laatste_tijdstap from an Excel file:
 sbkgraph_1.add_excel_data(xls_path,
                           str_sheet_name='blad_bnd',
                           index_column_data=0,
                           index_start=None,
-                          str_label_legend='results Excel')
+                          str_label_legend='resultaten_laatste_tijdstap Excel')
 
 # NOTA BENE:
 # As you can see 'index_column_data' is 0.
 # The first column in the Excel table next to the dates has index 0.
 # Typically this will be the second column in the Excel sheet.
 
-# The results in the Excel file can have a time step that differs from the time step of the Sobek results.
+# The resultaten_laatste_tijdstap in the Excel file can have a time step that differs from the time step of the Sobek resultaten_laatste_tijdstap.
 
 # Finally we add a label to the y-axis and show the graph:
 sbkgraph_1.y_axis.set_label('Q [m$^3$/s]')

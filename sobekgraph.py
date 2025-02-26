@@ -1,4 +1,4 @@
-"""This module contains a class to make graphs showing Sobek results.
+"""This module contains a class to make graphs showing Sobek resultaten_laatste_tijdstap.
 Bart den Ouden, october 2019, april 2020
 bart@bartdenoudenwateradvies.nl"""
 
@@ -240,9 +240,9 @@ class SobekGraph:
             Integer, zero based. A Sobek HIS-files can contain different parameters. To get an overview of the
             available parameters and corresponding indexes, use "SobekGraph.print_info_about_sobek_data_file()"
         :param list_str_ids_sobek_to_get_data_from:
-            List of ids of Sobekmodel elements (nodes, reaches, reachsegments). Example: []
+            List of IDS of Sobekmodel elements (nodes, reaches, reachsegments). Example: []
         :param list_str_labels_legend:
-            Optional. Number of strings must be equal to number of ids Sobek to get results from.
+            Optional. Number of strings must be equal to number of IDS Sobek to get resultaten_laatste_tijdstap from.
             When this param is not given param "list_str_ids_sobek_to_get_data_from" will be used for legend labels.
         :param index_start:
             Optional. Integer.
@@ -260,8 +260,8 @@ class SobekGraph:
 
         # Convert dates, so they are easier to layout:
         lst_dates = self._convert_lst_datetime_to_dates(sbkdata['timestamps'])
-        # plot (add) results:
-        for id, data in sbkdata['results'].items():
+        # plot (add) resultaten_laatste_tijdstap:
+        for id, data in sbkdata['resultaten_laatste_tijdstap'].items():
             self.figure.axes[0].plot_date(lst_dates, data, marker=None, linestyle='solid')
             if not list_str_labels_legend:
                 self.labels_legend.append(id)
@@ -282,7 +282,7 @@ class SobekGraph:
             Date and time in first column; the format must be excel date.
             A header is required, and must be the first row of the sheet only.
         :param str_path_xl_file:
-            Path of the excel file. Example: "C:\\results\\river.xls"".
+            Path of the excel file. Example: "C:\\resultaten_laatste_tijdstap\\river.xls"".
         :param str_sheet_name:
             Name of the sheet name. Example: "measure point 13".
         :param index_column_data:
@@ -291,7 +291,7 @@ class SobekGraph:
             Zero indexed.
         :param index_end:
             Zero indexed.
-            Given row is not included in results shown in graph.
+            Given row is not included in resultaten_laatste_tijdstap shown in graph.
         :param str_label_legend:
             Optional.
             When this param is not given param "list_str_ids_sobek_to_get_data_from" will be used for legend labels.
@@ -338,4 +338,4 @@ class SobekGraph:
         self._apply_settings_to_graph()
         self.figure.savefig(path, dpi=dpi)
 
-    # TODO: change unit y-axis, for example meter to milimeter. Actual results stays the same; just the ticklabels change.
+    # TODO: change unit y-axis, for example meter to milimeter. Actual resultaten_laatste_tijdstap stays the same; just the ticklabels change.

@@ -1,37 +1,46 @@
+"""
+Voorbeelden van het gebruik van de SobekDataFetcher class voor het lezen van Sobek-berekeningsresultaten en het
+schrijven daarvan naar een excelbestand.
+
+Bart den Ouden, 26 februari 2025
+"""
+
 from sobekdatafetcher import SobekDataFetcher
 import resultsat
 
+
+DIR_SOBEK = 'D:/Migratie/Sobek213/'
+SOBEK_PROJECT = '3108KD.lit'
+CASE = 'HK T10'
+NAAM_HISFILE = resultsat.RESULTS_AT_NODES
+
+# Creëer SobekDataFetcher-object. Hierbij wordt metadata uit het desbetreffende HIS-bestand in het object opgeslagen.
 sbk_fetcher = SobekDataFetcher(
-    dir_sobek='data_for_examples/',
-    project='PyTls.lit',
-    case='Case 1 of dummy model for examples Python tools',
-    name_hisfile=resultsat.RESULTS_AT_NODES
+    dir_sobek=DIR_SOBEK,
+    project=SOBEK_PROJECT,
+    case=CASE,
+    name_hisfile=NAAM_HISFILE
 )
 
-print('ids:', sbk_fetcher.ids)
+# Een HIS-file kan verschillende typen data bevatten. Kies de index voor de gewenste parameter. Zie hiervoor de
+# informatie die het SobekDataFetcher-object naar de console print.
+PARAMETER = 0
+# Het opgeven van id's is optioneel. Als je geen id's opgeeft krijg je de Sobekresultaten van alle locaties in het model.
+IDS = ["CONN1", 'CONN35']
+# Ook het opgeven van een periode is optioneel. In dit voorbeeld lezen we de laatste tijdstap uit de metadata in het
+# SobekDataFetcher-object, en gebruiken die om de in te lezen periode op te geven.
+laatste_tijdstap = sbk_fetcher.timestamps[-1]
 
-parameter = 0
-id_1 = sbk_fetcher.ids[0]
-id_2 = sbk_fetcher.ids[1]
-ids = [id_1, id_2]
-
-# results = sbk_fetcher.get_data(
-#     index_parameter_sobek_data=parameter,
-#     ids_sobek=ids
-# )
 results = sbk_fetcher.get_data(
-    index_parameter_sobek_data=parameter,
-    # ids_sobek=ids,
-    # start=0,
-    # end=1,
+    index_parameter_sobek_data=PARAMETER,
+    ids_sobek=IDS,
+    start=laatste_tijdstap,
+    end=laatste_tijdstap,
 )
 
-print('\nData gelezen uit hisfile:')
-for id_ in ids:
-    print(f"    node: {id_} | maximum waterpeil: {max(results.data[id_]):.3f} m NAP")
-
+# Deze methode kan alle regels en kolommen als die al bestaan overschrijven als je 'overwrite=True' opgeeft!
 results.write_to_excel(
-    path='n:/tmp/sbk_datafetcher_result.xlsx',
-    sheet_name='Case 1',
+    path='n:/tmp/sbk_datafetcher_result_xlsxwriter.xlsx',
+    sheet_name='Resultaten T=10 oid',
     overwrite=True
 )
